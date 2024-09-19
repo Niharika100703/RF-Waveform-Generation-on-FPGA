@@ -1,0 +1,72 @@
+clc;
+clear all;
+close all;
+fs = 160e6; % Sampling frequency
+ts = 1/fs; % Sampling period
+fc = 70e6; % Carrier frequency
+bw = 5e6; % Bandwidth
+pw = 26e-6; % Pulse width
+t = -pw/2 : ts : pw/2; % Time vector
+u = bw/pw; % Bandwidth-to-pulse-width ratio
+
+% Modulation signal
+m = exp(sqrt(-1) * pi * u * t.^2);
+rf_signal = exp(sqrt(-1) * 2 * pi * fc * t);
+
+% Real and Imaginary parts
+coswt = real(rf_signal);
+sinwt = imag(rf_signal);
+cosmt = real(m);
+sinmt = imag(m);
+
+% Mixed signal
+mixed_signal = coswt .* cosmt - sinwt .* sinmt;
+
+% Plot real and imaginary parts of modulation signal
+figure;
+plot(t, real(m), 'r');
+hold on;
+plot(t, imag(m), 'b');
+xlabel('time (s)');
+ylabel('amplitude');
+title('Real & Imaginary Parts of Modulation Signal');
+legend('Real Part', 'Imaginary Part');
+grid on;
+
+% Plot real and imaginary parts of the mixed signal
+figure;
+plot(t, mixed_signal, 'g');
+xlabel('time (s)');
+ylabel('amplitude');
+title('Mixed Signal');
+grid on;
+
+% COE file generation
+N_samples = length(t);
+coe_file = fopen('modulation_signal.coe', 'w'); % Output file name
+fprintf(coe_file, 'memory_initialization_radix = 16;\n');
+fprintf(coe_file, 'memory_initialization_vector=\n');
+
+for i = 1:N_samples
+    % Scale to 16-bit integer range
+    cosmt_scaled = round(real(m(i)) * 32767);
+    sinmt_scaled = round(imag(m(i)) * 32767);
+    
+    % Convert to 16-bit unsigned integers
+    if cosmt_scaled < 0
+        cosmt_16 = uint16(2^16 + cosmt_scaled); % Two's complement for negative values
+    else
+        cosmt_16 = uint16(cosmt_scaled);
+    end
+    if sinmt_scaled < 0
+        sinmt_16 = uint16(2^16 + sinmt_scaled); % Two's complement for negative values
+    else
+        sinmt_16 = uint16(sinmt_scaled);
+    end
+    
+    % Write to the COE file
+    fprintf(coe_file, '%04X%04X,\n', sinmt_16, cosmt_16);
+end
+
+fclose(coe_file);
+disp('Modulation signal and .coe file generation complete');
