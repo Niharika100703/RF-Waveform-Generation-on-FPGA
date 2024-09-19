@@ -1,0 +1,68 @@
+Testbench Code
+
+`timescale 1ns/1ps
+
+module tb_design_1_wrapper;
+
+  // Inputs to the DUT (Device Under Test)
+  reg clk160mhz;
+  reg prt;
+  reg prt_pos_edge;
+
+  // Output from the DUT
+  wire [15:0] S_0;
+
+  // Instantiate the design under test (DUT)
+  design_1_wrapper uut (
+    .S_0(S_0),
+    .clk160mhz(clk160mhz),
+    .prt(prt),
+    .prt_pos_edge(prt_pos_edge)
+  );
+
+  // Generate clk160mhz with a period of 6.25ns (160 MHz clock)
+  always #3.125 clk160mhz = ~clk160mhz;
+
+  // Initial block to control prt signal and generate prt_pos_edge
+  initial begin
+    // Initialize inputs
+    clk160mhz = 0;
+    prt = 0;
+    prt_pos_edge = 0;
+    
+    // Wait for global reset to finish
+    #100;
+
+    // Loop to generate prt signal with a pulse width of 26 microseconds and period of 1 ms
+    forever begin
+      prt = 1;
+      #26us;  // prt high for 26 microseconds
+      prt = 0;
+      prt_pos_edge = 1;
+      #6.25ns;  // prt_pos_edge high for one clock cycle (6.25 ns)
+      prt_pos_edge = 0;
+      #(1ms - 26us - 6.25ns);  // Wait for the rest of the 1ms period minus 26us and 6.25ns
+    end
+  end
+
+  // Monitor the S_0 output
+  always @(posedge clk160mhz) begin
+    if (prt) begin
+      // When prt is high, the output sample from BRAM should be generated
+      $display("Time: %t, prt: %b, S_0: %h", $time, prt, S_0);
+    end else if (prt_pos_edge) begin
+      // When prt is low and prt_pos_edge goes high, S_0 should be cleared
+      $display("Time: %t, prt_pos_edge: %b, S_0 should be cleared: %h", $time, prt_pos_edge, S_0);
+    end
+  end
+
+  // Simulation time control
+  initial begin
+    // Run the simulation for a sufficient time
+    #10ms;
+    
+    // Stop the simulation
+    $stop;
+  end
+
+endmodule
