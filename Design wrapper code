@@ -1,0 +1,25 @@
+HDL Wrapper Code
+
+timescale 1 ps / 1 ps
+
+module design_1_wrapper
+   (S_0,
+    clk160mhz,
+    prt,
+    prt_pos_edge);
+  output [15:0]S_0;
+  input clk160mhz;
+  input prt;
+  input prt_pos_edge;
+
+  wire [15:0]S_0;
+  wire clk160mhz;
+  wire prt;
+  wire prt_pos_edge;
+
+  design_1 design_1_i
+       (.S_0(S_0),
+        .clk160mhz(clk160mhz),
+        .prt(prt),
+        .prt_pos_edge(prt_pos_edge));
+endmodule
